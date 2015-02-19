@@ -39,6 +39,10 @@ window.onload = function() {
     
     //timer of the game
     var timer;
+    var timerText;
+    var timerStyle;
+    var minutes;
+    var seconds;
     
     //game over message (and player death)
     var lost;
@@ -47,6 +51,7 @@ window.onload = function() {
     
     //player input
     var cursors;
+    var escapeButton;
     
     //sounds
     var fx;
@@ -54,6 +59,8 @@ window.onload = function() {
     
     //holds clues/evidence
     var clues;
+    var clueTime = 2000;
+    var nextClue = 0;
     
     function create() {
         game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -82,7 +89,7 @@ window.onload = function() {
         // adds evidence sprites
         clues = game.add.group();
         clues.enableBody = true;
-        clues.createMultiple(30, 'clue', 0, false);
+        clues.createMultiple(3, 'clue', 0, false);
         clues.setAll('anchor.x', 0.5);
         clues.setAll('anchor.y', 0.5);
         clues.setAll('outOfBoundsKill', true);
@@ -90,6 +97,7 @@ window.onload = function() {
         
         // Player controls
         cursors = game.input.keyboard.createCursorKeys();
+        escapeButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         
         // Adds sound
         fx = game.add.audio('castSound');
@@ -101,7 +109,10 @@ window.onload = function() {
         isAlive = true;
         
         //initializes timer
-        timer = 90000;
+        timer = game.time.now+90000;
+        timerStyle = { font: "40px Arial", fill: "#ffff44", align: "center" }
+        timerText = game.add.text(game.world.centerX, 30, "1:30", timerStyle);
+        timerText.anchor.setTo(0.5, 0.5);
         
         //creates game over
         style = { font: "65px Arial", fill: "#ff0044", align: "center" };
@@ -144,41 +155,100 @@ window.onload = function() {
             player.body.velocity.y = 150;
         }
         
+        //creates clues
+        createClue();
+        
+        //updates timer
+        var timeLeft = timer - game.time.now;
+        minutes = parseInt(timeLeft)/60000;
+        seconds = (parseInt(timeLeft)/1000) % 60;
+        if(seconds >= 10)
+            timerText.setText(parseInt(minutes) + ":" + parseInt(seconds));
+        else
+            timerText.setText(parseInt(minutes) + ":0" + parseInt(seconds));
+        
+        if(timeLeft <= 0)
+        {
+            timeOut();
+        }
+        
+        //allows player to escape early... usually not an issue in this prototype, plenty of time given
+        if(escapeButton.isDown && isAlive)
+        {
+            escape();
+        }
+        
         //now to check enemies
         game.physics.arcade.overlap(clues, player, clueHandler, null, this);
         game.physics.arcade.overlap(enemies, player, monsterHandler, null, this);
         
     }
     
-    function castMagic() {
-        /*if (game.time.now > nextFire && bolts.countDead() > 0)
+    function createClue() {
+        if(game.time.now > nextClue)
         {
-            nextFire = game.time.now + fireRate;
-
-            var bolt = bolts.getFirstExists(false);
-
-            bolt.reset(player.x, player.y);
-
-            bolt.rotation = game.physics.arcade.moveToPointer(bolt, 1000, game.input.activePointer, 500);
-            
-            fx.play();
-        }*/
+            nextClue = game.time.now + clueTime;
+            if (clues.countDead() > 0)
+            {
+                var clue = clues.getFirstExists(false);
+                
+                var tempx = game.rnd.integer() % 750 + 25;
+                var tempy = game.rnd.integer() % 550 + 25;
+                 
+                clue.reset(tempx, tempy);
+            }
+        }
     }
     
     function clueHandler (player, clue) {
         clue.kill();
         percentSuccess += 5;
-        if(percentSuccess > 100) percentSuccess = 100;
+        if(percentSuccess >= 100)
+        {
+            percentSuccess = 100;
+            victory();
+        }
     }
     
     function monsterHandler(player, enemy)
     {
         player.kill();
         isAlive = false;
-        lost = game.add.text(game.world.centerX, game.world.centerY, "GAME OVER!", style);
+        lost = game.add.text(game.world.centerX, game.world.centerY, "You were caught!\nGAME OVER!", style);
         lost.anchor.setTo( 0.5, 0.5);
     }
     
+    function timeOut()
+    {
+        player.kill();
+        isAlive = false;
+        lost = game.add.text(game.world.centerX, game.world.centerY, "Bad guy got away....\nGAME OVER!", style);
+        lost.anchor.setTo( 0.5, 0.5);
+    }
+    
+    function defeat()
+    {
+        player.kill();
+        isAlive = false;
+        lost = game.add.text(game.world.centerX, game.world.centerY, "Not enough evidence.\nYOU LOSE!", style);
+        lost.anchor.setTo( 0.5, 0.5);
+    }
+    
+    function victory()
+    {
+        player.kill();
+        isAlive = false;
+        lost = game.add.text(game.world.centerX, game.world.centerY, "You arrested the bad guy!\nYOU WIN!", style);
+        lost.anchor.setTo( 0.5, 0.5);
+    }
+    function escape()
+    {
+        var temp = game.rnd.integer() % 100 + 1;
+        if(temp < percentSuccess)
+            victory();
+        else
+            defeat();
+    }
     
     function render()
     {
