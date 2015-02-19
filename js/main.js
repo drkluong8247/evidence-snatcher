@@ -23,7 +23,6 @@ window.onload = function() {
         game.load.image( 'clue', 'assets/Clue.png');
         
         // loads sound
-        game.load.audio( 'castSound', 'assets/magicshot.mp3');
         game.load.audio( 'backgroundMusic', 'assets/AnimalCrossing-TownHall.ogg');
     }
     
@@ -54,7 +53,6 @@ window.onload = function() {
     var escapeButton;
     
     //sounds
-    var fx;
     var music;
     
     //holds clues/evidence
@@ -99,8 +97,7 @@ window.onload = function() {
         cursors = game.input.keyboard.createCursorKeys();
         escapeButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         
-        // Adds sound
-        fx = game.add.audio('castSound');
+        // Adds music
         music = game.add.audio('backgroundMusic', 1, true);
         music.play('', 0, 1, true);
         
@@ -126,8 +123,8 @@ window.onload = function() {
             var enemy = enemies.create(10, 10, 'badguy');
             enemy.anchor.setTo(0.5, 0.5);
             enemy.body.bounce.set(1);
-            enemy.body.velocity.x = game.rnd.integer() % 200;
-            enemy.body.velocity.y = game.rnd.integer() % 200;
+            enemy.body.velocity.x = game.rnd.integer() % 200 + 30;
+            enemy.body.velocity.y = game.rnd.integer() % 200 + 30;
             enemy.body.collideWorldBounds = true;
         }
         
@@ -167,7 +164,7 @@ window.onload = function() {
         else
             timerText.setText(parseInt(minutes) + ":0" + parseInt(seconds));
         
-        if(timeLeft <= 0)
+        if((timeLeft <= 0) && isAlive)
         {
             timeOut();
         }
@@ -202,7 +199,7 @@ window.onload = function() {
     
     function clueHandler (player, clue) {
         clue.kill();
-        percentSuccess += 5;
+        percentSuccess += 3;
         if(percentSuccess >= 100)
         {
             percentSuccess = 100;
